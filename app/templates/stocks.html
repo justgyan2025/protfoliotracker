@@ -1,0 +1,322 @@
+{% extends "base.html" %}
+
+{% block title %}Stocks - Investment Tracker{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1>Stock Investments</h1>
+</div>
+
+<div class="form-card">
+    <h2 class="form-card-title">Add New Stock</h2>
+    <form action="{{ url_for('add_stock') }}" method="POST" id="stockForm">
+        <input type="hidden" name="token" value="{{ token }}">
+        <div class="form-group">
+            <label for="ticker" class="form-label">Stock Ticker Symbol</label>
+            <div class="input-group">
+                <input type="text" id="ticker" name="ticker" class="form-input" required placeholder="e.g., RELIANCE, TCS, INFY (without .NS or .BO)">
+                <button type="button" id="fetchStock" class="btn btn-fetch">Fetch</button>
+            </div>
+            <small>Enter Indian stock symbol without exchange suffix. Examples: RELIANCE, HDFCBANK, TCS, INFY</small>
+        </div>
+        <div class="form-group">
+            <label for="stock_name" class="form-label">Company Name</label>
+            <input type="text" id="stock_name" class="form-input" readonly placeholder="Will be auto-filled after ticker is fetched">
+        </div>
+        <div class="form-group">
+            <label for="current_price" class="form-label">Current Price (₹)</label>
+            <input type="text" id="current_price" class="form-input" readonly placeholder="Will be auto-filled after ticker is fetched">
+        </div>
+        <div class="form-group">
+            <label for="exchange" class="form-label">Exchange</label>
+            <input type="text" id="exchange" class="form-input" readonly placeholder="Will be auto-filled after ticker is fetched">
+        </div>
+        <div class="form-group">
+            <label for="symbol" class="form-label">Symbol</label>
+            <input type="text" id="symbol" name="symbol" class="form-input" readonly placeholder="Will be auto-filled after ticker is fetched">
+        </div>
+        <div class="form-group">
+            <label for="quantity" class="form-label">Quantity</label>
+            <input type="number" id="quantity" name="quantity" class="form-input" step="0.01" required placeholder="Number of shares">
+        </div>
+        <div class="form-group">
+            <label for="purchase_price" class="form-label">Purchase Price Per Share (₹)</label>
+            <input type="number" id="purchase_price" name="purchase_price" class="form-input" step="0.01" required placeholder="Price per share">
+        </div>
+        <button type="submit" id="submitButton" class="btn" disabled>Add Stock</button>
+        <div id="stockValidationMessage" class="mt-20"></div>
+    </form>
+</div>
+
+<div class="form-card">
+    <h2 class="form-card-title">Example Indian Stocks</h2>
+    <div class="example-stocks">
+        <span class="example-stock" data-ticker="RELIANCE">RELIANCE</span>
+        <span class="example-stock" data-ticker="TCS">TCS</span>
+        <span class="example-stock" data-ticker="HDFCBANK">HDFCBANK</span>
+        <span class="example-stock" data-ticker="INFY">INFY</span>
+        <span class="example-stock" data-ticker="ICICIBANK">ICICIBANK</span>
+        <span class="example-stock" data-ticker="KOTAKBANK">KOTAKBANK</span>
+        <span class="example-stock" data-ticker="SBIN">SBIN</span>
+        <span class="example-stock" data-ticker="BHARTIARTL">BHARTIARTL</span>
+    </div>
+    <small>Click on any example to try it</small>
+</div>
+
+{% if stocks %}
+<div class="form-card">
+    <h2 class="form-card-title">Your Stock Portfolio</h2>
+    <div class="dashboard-table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Company</th>
+                    <th>Ticker</th>
+                    <th>Exchange</th>
+                    <th>Quantity</th>
+                    <th>Purchase Price</th>
+                    <th>Current Price</th>
+                    <th>Total Value</th>
+                    <th>Profit/Loss</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ticker, details in stocks.items() %}
+                    {% set current_price = details.current_price|float %}
+                    {% set purchase_price = details.purchase_price|float %}
+                    {% set quantity = details.quantity|float %}
+                    {% set total_value = current_price * quantity %}
+                    {% set invested_value = purchase_price * quantity %}
+                    {% set profit_loss = total_value - invested_value %}
+                    {% set profit_loss_percent = (profit_loss / invested_value * 100) if invested_value > 0 else 0 %}
+                    
+                    <tr>
+                        <td>{{ details.name }}</td>
+                        <td>{{ ticker }}</td>
+                        <td>{{ details.exchange }}</td>
+                        <td>{{ quantity }}</td>
+                        <td>₹{{ "%.2f"|format(purchase_price) }}</td>
+                        <td>₹{{ "%.2f"|format(current_price) }}</td>
+                        <td>₹{{ "%.2f"|format(total_value) }}</td>
+                        <td {% if profit_loss > 0 %}class="text-success"{% elif profit_loss < 0 %}class="text-danger"{% endif %}>
+                            ₹{{ "%.2f"|format(profit_loss) }} ({{ "%.2f"|format(profit_loss_percent) }}%)
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="form-card text-center">
+    <p>You don't have any stocks in your portfolio yet. Add your first stock above.</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .text-success {
+        color: #2ecc71;
+    }
+    
+    .text-danger {
+        color: #e74c3c;
+    }
+    
+    .btn-secondary {
+        background-color: #7f8c8d;
+        margin-right: 10px;
+    }
+    
+    .btn-secondary:hover {
+        background-color: #95a5a6;
+    }
+    
+    .input-group {
+        display: flex;
+        align-items: center;
+    }
+    
+    .input-group .form-input {
+        flex: 1;
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+    
+    .btn-fetch {
+        padding: 10px 15px;
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+        background-color: #3498db;
+        margin-left: -1px;
+    }
+    
+    .btn-fetch:hover {
+        background-color: #2980b9;
+    }
+    
+    #stockValidationMessage {
+        padding: 10px;
+        border-radius: 4px;
+        margin-top: 20px;
+    }
+    
+    .validation-success {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    
+    .validation-error {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    
+    .loading {
+        display: inline-block;
+        width: 1em;
+        height: 1em;
+        border: 2px solid rgba(0, 0, 0, 0.2);
+        border-radius: 50%;
+        border-top-color: #3498db;
+        animation: spin 1s ease-in-out infinite;
+        margin-right: 5px;
+    }
+    
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    
+    .example-stocks {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin: 15px 0;
+    }
+    
+    .example-stock {
+        display: inline-block;
+        padding: 5px 10px;
+        background-color: #f1f1f1;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .example-stock:hover {
+        background-color: #e1e1e1;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get elements
+    const tickerInput = document.getElementById('ticker');
+    const stockNameInput = document.getElementById('stock_name');
+    const currentPriceInput = document.getElementById('current_price');
+    const exchangeInput = document.getElementById('exchange');
+    const symbolInput = document.getElementById('symbol');
+    const fetchButton = document.getElementById('fetchStock');
+    const submitButton = document.getElementById('submitButton');
+    const validationMessage = document.getElementById('stockValidationMessage');
+    const exampleStocks = document.querySelectorAll('.example-stock');
+    
+    // Function to fetch stock data
+    function fetchStockData() {
+        const ticker = tickerInput.value.trim();
+        if (!ticker) {
+            validationMessage.textContent = 'Please enter a stock ticker symbol';
+            validationMessage.className = 'validation-error';
+            return;
+        }
+        
+        // Show loading state
+        fetchButton.disabled = true;
+        fetchButton.innerHTML = '<span class="loading"></span> Fetching...';
+        validationMessage.textContent = 'Fetching stock data...';
+        validationMessage.className = '';
+        
+        // Send AJAX request to get stock information
+        const formData = new FormData();
+        formData.append('ticker', ticker);
+        
+        fetch('{{ url_for("get_stock_info") }}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Reset fetch button
+            fetchButton.disabled = false;
+            fetchButton.textContent = 'Fetch';
+            
+            if (data.error) {
+                validationMessage.textContent = 'Error: ' + data.error;
+                validationMessage.className = 'validation-error';
+                submitButton.disabled = true;
+                return;
+            }
+            
+            if (data.current_price === 0) {
+                validationMessage.textContent = 'Error: Could not find stock information for ' + ticker;
+                validationMessage.className = 'validation-error';
+                submitButton.disabled = true;
+                return;
+            }
+            
+            // Update form fields
+            stockNameInput.value = data.name;
+            currentPriceInput.value = data.current_price.toFixed(2);
+            exchangeInput.value = data.exchange;
+            symbolInput.value = data.symbol || ticker;
+            
+            validationMessage.textContent = 'Stock data fetched successfully!';
+            validationMessage.className = 'validation-success';
+            submitButton.disabled = false;
+        })
+        .catch(error => {
+            // Reset fetch button
+            fetchButton.disabled = false;
+            fetchButton.textContent = 'Fetch';
+            
+            validationMessage.textContent = 'Error: ' + error.message;
+            validationMessage.className = 'validation-error';
+            submitButton.disabled = true;
+        });
+    }
+    
+    // Add event listener to the fetch button
+    fetchButton.addEventListener('click', fetchStockData);
+    
+    // Allow Enter key in the ticker input to trigger fetch
+    tickerInput.addEventListener('keypress', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            fetchStockData();
+        }
+    });
+    
+    // Reset validation when ticker changes
+    tickerInput.addEventListener('input', function() {
+        stockNameInput.value = '';
+        currentPriceInput.value = '';
+        exchangeInput.value = '';
+        symbolInput.value = '';
+        submitButton.disabled = true;
+        validationMessage.textContent = '';
+        validationMessage.className = '';
+    });
+    
+    // Add event listeners to example stocks
+    exampleStocks.forEach(example => {
+        example.addEventListener('click', function() {
+            const exampleTicker = this.getAttribute('data-ticker');
+            tickerInput.value = exampleTicker;
+            fetchStockData();
+        });
+    });
+});
+</script>
+{% endblock %} 

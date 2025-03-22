@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Investment Tracker{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container navbar-container">
+            <a href="{{ url_for('dashboard', token=token) }}" class="navbar-brand">Investment Tracker</a>
+            <ul class="navbar-menu">
+                <li class="navbar-item">
+                    <a href="{{ url_for('dashboard', token=token) }}" class="navbar-link">Dashboard</a>
+                </li>
+                <li class="navbar-item">
+                    <a href="{{ url_for('stocks', token=token) }}" class="navbar-link">Stocks</a>
+                </li>
+                <li class="navbar-item">
+                    <a href="{{ url_for('mutual_funds', token=token) }}" class="navbar-link">Mutual Funds</a>
+                </li>
+                <li class="navbar-item">
+                    <a href="{{ url_for('logout') }}" class="navbar-link">Logout</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="flash-message">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        {% block content %}{% endblock %}
+    </div>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html> 

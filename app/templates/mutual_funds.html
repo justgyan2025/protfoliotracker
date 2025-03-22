@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Mutual Funds - Investment Tracker{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1>Mutual Fund Investments</h1>
+</div>
+
+<div class="form-card">
+    <h2 class="form-card-title">Add New Mutual Fund</h2>
+    <form action="{{ url_for('add_mutual_fund') }}" method="POST">
+        <input type="hidden" name="token" value="{{ token }}">
+        <div class="form-group">
+            <label for="scheme_code" class="form-label">Scheme Code</label>
+            <input type="text" id="scheme_code" name="scheme_code" class="form-input" required placeholder="e.g., 119598, 120505">
+            <small>You can find scheme codes on <a href="https://www.mfapi.in/" target="_blank">MFAPI.in</a></small>
+        </div>
+        <div class="form-group">
+            <label for="units" class="form-label">Units</label>
+            <input type="number" id="units" name="units" class="form-input" step="0.001" required placeholder="Number of units">
+        </div>
+        <div class="form-group">
+            <label for="purchase_nav" class="form-label">Purchase NAV (₹)</label>
+            <input type="number" id="purchase_nav" name="purchase_nav" class="form-input" step="0.0001" required placeholder="NAV at time of purchase">
+        </div>
+        <button type="submit" class="btn">Add Mutual Fund</button>
+    </form>
+</div>
+
+{% if funds %}
+<div class="form-card">
+    <h2 class="form-card-title">Your Mutual Fund Portfolio</h2>
+    <div class="dashboard-table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Scheme Name</th>
+                    <th>Code</th>
+                    <th>Units</th>
+                    <th>Purchase NAV</th>
+                    <th>Current NAV</th>
+                    <th>Total Value</th>
+                    <th>Profit/Loss</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for code, details in funds.items() %}
+                    {% set current_nav = details.current_nav|float %}
+                    {% set purchase_nav = details.purchase_nav|float %}
+                    {% set units = details.units|float %}
+                    {% set total_value = current_nav * units %}
+                    {% set invested_value = purchase_nav * units %}
+                    {% set profit_loss = total_value - invested_value %}
+                    {% set profit_loss_percent = (profit_loss / invested_value * 100) if invested_value > 0 else 0 %}
+                    
+                    <tr>
+                        <td>{{ details.name }}</td>
+                        <td>{{ code }}</td>
+                        <td>{{ units }}</td>
+                        <td>₹{{ "%.4f"|format(purchase_nav) }}</td>
+                        <td>₹{{ "%.4f"|format(current_nav) }}</td>
+                        <td>₹{{ "%.2f"|format(total_value) }}</td>
+                        <td {% if profit_loss > 0 %}class="text-success"{% elif profit_loss < 0 %}class="text-danger"{% endif %}>
+                            ₹{{ "%.2f"|format(profit_loss) }} ({{ "%.2f"|format(profit_loss_percent) }}%)
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="form-card text-center">
+    <p>You don't have any mutual funds in your portfolio yet. Add your first mutual fund above.</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .text-success {
+        color: #2ecc71;
+    }
+    
+    .text-danger {
+        color: #e74c3c;
+    }
+</style>
+{% endblock %} 

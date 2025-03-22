@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Investment Tracker{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1>Investment Dashboard</h1>
+</div>
+
+{% set total_stock_value = namespace(val=0) %}
+{% set total_mf_value = namespace(val=0) %}
+
+{% if stocks %}
+    {% for ticker, details in stocks.items() %}
+        {% set current_price = details.current_price|float if details.current_price is defined else 0 %}
+        {% set total_stock_value.val = total_stock_value.val + (details.quantity|float * current_price if current_price else details.quantity|float * details.purchase_price|float) %}
+    {% endfor %}
+{% endif %}
+
+{% if mutual_funds %}
+    {% for code, details in mutual_funds.items() %}
+        {% set current_nav = details.current_nav|float if details.current_nav is defined else 0 %}
+        {% set total_mf_value.val = total_mf_value.val + (details.units|float * current_nav if current_nav else details.units|float * details.purchase_nav|float) %}
+    {% endfor %}
+{% endif %}
+
+{% set total_investment = total_stock_value.val + total_mf_value.val %}
+
+<div class="dashboard-grid">
+    <div class="dashboard-card">
+        <h2 class="dashboard-card-title">Total Investment Value</h2>
+        <div class="dashboard-card-value">₹{{ "%.2f"|format(total_investment) }}</div>
+        <p class="dashboard-card-subtitle">Combined value of all investments</p>
+    </div>
+    
+    <div class="dashboard-card">
+        <h2 class="dashboard-card-title">Stocks Value</h2>
+        <div class="dashboard-card-value">₹{{ "%.2f"|format(total_stock_value.val) }}</div>
+        <p class="dashboard-card-subtitle">{{ stocks|length }} stocks in portfolio</p>
+    </div>
+    
+    <div class="dashboard-card">
+        <h2 class="dashboard-card-title">Mutual Funds Value</h2>
+        <div class="dashboard-card-value">₹{{ "%.2f"|format(total_mf_value.val) }}</div>
+        <p class="dashboard-card-subtitle">{{ mutual_funds|length }} mutual funds in portfolio</p>
+    </div>
+</div>
+
+<div class="form-card">
+    <h2 class="form-card-title">Recent Investments</h2>
+    
+    {% if stocks or mutual_funds %}
+        <div class="dashboard-table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Name</th>
+                        <th>Symbol/Code</th>
+                        <th>Exchange/AMC</th>
+                        <th>Value</th>
+                        <th>Quantity/Units</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if stocks %}
+                        {% for ticker, details in stocks.items() %}
+                            {% set current_price = details.current_price|float if details.current_price is defined else 0 %}
+                            <tr>
+                                <td>Stock</td>
+                                <td>{{ details.name }}</td>
+                                <td>{{ ticker }}</td>
+                                <td>{{ details.exchange if details.exchange is defined else "Unknown" }}</td>
+                                <td>₹{{ "%.2f"|format(details.quantity|float * current_price if current_price else details.quantity|float * details.purchase_price|float) }}</td>
+                                <td>{{ details.quantity }}</td>
+                            </tr>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    {% if mutual_funds %}
+                        {% for code, details in mutual_funds.items() %}
+                            {% set current_nav = details.current_nav|float if details.current_nav is defined else 0 %}
+                            <tr>
+                                <td>Mutual Fund</td>
+                                <td>{{ details.name }}</td>
+                                <td>{{ code }}</td>
+                                <td>-</td>
+                                <td>₹{{ "%.2f"|format(details.units|float * current_nav if current_nav else details.units|float * details.purchase_nav|float) }}</td>
+                                <td>{{ details.units }}</td>
+                            </tr>
+                        {% endfor %}
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="text-center">You don't have any investments yet. Add stocks or mutual funds to get started.</p>
+        <div class="text-center mt-20">
+            <a href="{{ url_for('stocks', token=token) }}" class="btn">Add Stocks</a>
+            <a href="{{ url_for('mutual_funds', token=token) }}" class="btn">Add Mutual Funds</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %} 
